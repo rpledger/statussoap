@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<head>
+	<link rel="stylesheet" type="text/css" href="stylesheets/home2.css">
+	<link href='http://fonts.googleapis.com/css?family=Montserrat+Alternates:400,700|Sansita+One' rel='stylesheet' type='text/css'>
+</head>
+<body>
+
+
+	<div id="page">
+	<div id="content">
+		<div id="header">
+		<div id="nav">
+			<a href="#"><p id="current">Home</p></a>
+			<p><a href="#">About</a></p>
+			<p><a href="#">Contact</a></p>
+		</div>
+			<div id="logo">Status<strong>Soap</strong></div>
+		</div>
+		
+		<div id="login-box">
+			<div id="login-ui">
+                	<h1>Login with Facebook</h1>
+               		<p>
+                    Sign in to begin searching all of your old statuses and posts
+                    for bad language and inappropriate content
+                	</p>
+            	<hr>
+            	<div id="fb-button"><fb:login-button ></fb:login-button>
+				<div id="fb-root"></div></div>
+				<script src="http://connect.facebook.net/en_US/all.js"></script>
+				<script>
+  					FB.init({appId: '629500937079404', status: true, cookie: true, xfbml: true});
+  					FB.Event.subscribe('auth.sessionChange', function(response) {
+   					if (response.session) {
+      				// A user has logged in, and a new cookie has been saved
+   					 } else {
+     				// The user has logged out, and the cookie has been cleared
+    				}	
+  					});
+				</script>
+            </div>
+        </div>
+		
+			<div id="text-banner"><h2>Clean up your Facebook statuses<br> and posts when...</br>
+				<div id="smaller-banner">you're trying to <em>get a job</em></br></br>
+					you're applying to <em>Graduate School</em></br></br>
+					you're <em>friends with your mom</em> on Facebook</br>
+					
+				</div>
+				</h2></div>
+
+			
+			<div id="clear-footer"></div>
+	</div>
+		
+	</div>
+	<div id="footer"></div>
+</body>
+</html>

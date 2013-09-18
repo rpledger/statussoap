@@ -1,0 +1,189 @@
+@import url(http://fonts.googleapis.com/css?family=Roboto:300,400,900);
+
+body, html{
+margin: 0px;
+padding: 0px;
+background: white;
+font-family: 'Roboto';
+}
+#page{
+height: 550px;
+position:relative;
+margin-bottom: -50px;
+}
+#middle{
+
+}
+
+#header{
+background: white;
+height: 60px;
+width: 950px;
+margin: auto;
+margin-top: 20px;
+margin-bottom: 60px;
+padding-bottom: 15px;
+border-bottom-style: solid;
+border-color: grey;
+border-width: 1px;
+}
+#logo{
+color:  #3BB9FF;
+font-family: 'Roboto';
+font-size: 42px;
+padding-left: 15px;
+padding-top: 8px;
+float: left;
+font-weight: 400;
+}
+#logo strong{
+font-weight: 900;
+}
+#nav{
+color: black;
+font-family: 'Roboto';
+font-weight: 300;
+float: right;
+padding-right: 5px;
+padding-top: 20px;
+font-size: 18px;
+display: block;
+
+}
+#nav a{
+text-decoration: none;
+color: black;
+}
+#nav a:hover{
+color: lightgrey;
+}
+
+#nav #current{
+color: #3BB9FF;
+}
+
+#nav a:hover #current{
+color: navy;
+}
+
+#nav p{
+padding-right: 50px;
+display: inline;
+
+}
+
+#content{
+width: 1000px;
+margin: auto;
+margin-top: 10px;
+background: white;
+height: 500px;
+font-family: 'Roboto';
+}
+#text-banner{
+width: 800px;
+height: 50px;
+margin: auto;
+color: #2C3539;
+font-size: 24px;
+margin-bottom: -30px;
+margin-right: 150px;
+}
+#smaller-banner{
+font-size: 24px;
+color: grey;
+padding-top: 30px;
+padding-right: 20px;
+padding-left: 20px;
+font-weight: 400;
+
+}
+#smaller-banner em{
+color: #3BB9FF;
+}
+
+#login-box{
+float: right;
+background: white;
+height: 400px;
+width:350px;
+
+}
+#login-ui{
+height: 200px;
+width: 400px;
+background: #F5F5F5;
+padding-left: 10px;
+padding-top: 2px;
+padding-right: 10px;
+margin: 20px auto;
+margin-top: 35px;
+border-radius: 5px;
+}
+
+
+#login-ui h1 {
+  font-size: 35px;
+  padding-bottom: 10px;
+  margin-bottom: -10px; 
+  text-align: center;
+}
+#login-ui p {
+  font-size: 12px;
+  padding-bottom: 5px;
+  line-height: 25px;
+  text-align: center;
+}
+.button {
+    border: none;
+    display: block;
+    background: #3BB9FF;
+    height: 40px;
+    width: 80px;
+    color: #ffffff;
+    font-size: 14px;
+    text-align: center;
+    border-radius: 5px;
+    /*box-shadow: 0px 3px 1px #2075aa;*/
+  	-webkit-transition: all 0.15s linear;
+	  -moz-transition: all 0.15s linear;
+	  transition: all 0.15s linear;
+}
+
+.button:hover {
+  background: #1e75aa;
+  /*box-shadow: 0 3px 1px #237bb2;*/
+}
+
+.button:active {
+  background: #136899;
+  /*box-shadow: 0 3px 1px #0f608c;*/
+}
+
+#fb-button{
+margin: 0 auto;
+width: 70px;
+}
+
+#facebook-button{
+    border: none;
+    display: block;
+    background: #000080;
+    height: 22px;
+    width: 150px;
+    color: #ffffff;
+    font-size: 14px;
+    text-align: center;
+    border-radius: 5px;
+    /*box-shadow: 0px 3px 1px #2075aa;*/
+  	-webkit-transition: all 0.15s linear;
+	  -moz-transition: all 0.15s linear;
+	  transition: all 0.15s linear;
+	  margin: auto;
+}
+#footer{
+background: #3BB9FF;
+height: 50px;
+clear: both;
+margin-top: 60px;
+}
