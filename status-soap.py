@@ -105,6 +105,10 @@ class HomeLoggedIn(BaseHandler):
 		
 	def get(self):
 		template = JINJA_ENVIRONMENT.get_template('home.html')
+		graph = facebook.GraphAPI(self.current_user["access_token"])
+		#me=graph.get_object("me");
+		status=graph.fql('SELECT message From status WHERE uid=me() ');
+		self.response.write(status);
 		self.response.write(template.render(dict(
         	    facebook_app_id=FACEBOOK_APP_ID,
         	    current_user=self.current_user
