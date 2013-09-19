@@ -5,6 +5,7 @@ import os
 import facebook
 import urllib2
 import re
+import datetime
 
 # Find a JSON parser
 try:
@@ -19,6 +20,7 @@ _parse_json = json.dumps
 from time import sleep
 from google.appengine.ext import db
 from webapp2_extras import sessions
+def dt(u): return datetime.datetime.fromtimestamp(u)
 
 FACEBOOK_APP_ID = "629500937079404"
 FACEBOOK_APP_SECRET= "8ca2eedf6a2594ea1fb42694509aacd8"
@@ -117,14 +119,16 @@ class HomeLoggedIn(BaseHandler):
 	def get(self):
 		template = JINJA_ENVIRONMENT.get_template('home.html')
 		graph = facebook.GraphAPI(self.current_user["access_token"])
-		status=graph.fql('SELECT message From status WHERE uid=me() ');
+		status=graph.fql('SELECT message,time From status WHERE uid=me() ');
 		mlist=status['data']
 
+		for m in mlist:
+			m['time']=dt(m['time'])
 		self.response.write(template.render(dict(
-        	    facebook_app_id=FACEBOOK_APP_ID,
-        	    current_user=self.current_user,
-        	    messages=mlist
-        	)))
+				facebook_app_id=FACEBOOK_APP_ID,
+				current_user=self.current_user,
+				messages=mlist
+			)))
 
 	
 class User(db.Model):
