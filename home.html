@@ -15,43 +15,16 @@
 		
 		<div class="scrollbar" id="style-1">
      		<div class="force-overflow">
+     		{% for m in messages%}
 			<div class="post">
 				<a href="#" class="button">Edit Status</a>
-				<p><strong>This is a status that I wrote a long time ago...</strong></p>
+				<p><strong>{{m['message']}}</strong></p>
 				<p>Posted on: April 3rd, 2000</br>
 				Flagged for: Inappropriate Content</p>
-				
-				<hr>
-				<a class="button" href="#">Edit Status</a>
-				<p><strong>This is a status that I wrote a long time ago...</strong></p>
-				<p>Posted on: April 3rd, 2000<br>
-				Flagged for: Inappropriate Content</p>
-		
-				<hr>
-				<a class="button" href="#">Edit Status</a>
-				<p><strong>This is a status that I wrote a long time ago...</strong></p>
-				<p>Posted on: April 3rd, 2000<br>
-				Flagged for: Inappropriate Content</p>
-				<hr>
-				
-				<a class="button" href="#">Edit Status</a>
-				<p><strong>This is a status that I wrote a long time ago...</strong></p>
-				<p>Posted on: April 3rd, 2000<br>
-				Flagged for: Inappropriate Content</p>
-				<hr>
-				
-				<a class="button" href="#">Edit Status</a>
-				<p><strong>This is a status that I wrote a long time ago...</strong></p>
-				<p>Posted on: April 3rd, 2000<br>
-				Flagged for: Inappropriate Content</p>
-				<hr>
-				
-				<a class="button" href="#">Edit Status</a>
-				<p><strong>This is a status that I wrote a long time ago...</strong></p>
-				<p>Posted on: April 3rd, 2000<br>
-				Flagged for: Inappropriate Content</p>
-				<hr>
 			</div>
+			<hr>
+			{% endfor %}
+			
 			</div>
 			
 		</div>

@@ -4,6 +4,17 @@ import jinja2
 import os
 import facebook
 import urllib2
+import re
+
+# Find a JSON parser
+try:
+    import simplejson as json
+except ImportError:
+    try:
+        from django.utils import simplejson as json
+    except ImportError:
+        import json
+_parse_json = json.dumps
 
 from time import sleep
 from google.appengine.ext import db
@@ -106,12 +117,13 @@ class HomeLoggedIn(BaseHandler):
 	def get(self):
 		template = JINJA_ENVIRONMENT.get_template('home.html')
 		graph = facebook.GraphAPI(self.current_user["access_token"])
-		#me=graph.get_object("me");
 		status=graph.fql('SELECT message From status WHERE uid=me() ');
-		self.response.write(status);
+		mlist=status['data']
+
 		self.response.write(template.render(dict(
         	    facebook_app_id=FACEBOOK_APP_ID,
-        	    current_user=self.current_user
+        	    current_user=self.current_user,
+        	    messages=mlist
         	)))
 
 	
