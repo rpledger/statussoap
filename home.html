@@ -9,7 +9,7 @@
 	<div id="page">
 	<div id="content">
 		<div id="header">
-		<div id="nav"><a href="#"><p id="current">Home</p></a> <p><a href="#">About</a></p> <p><a href="#">Contact</a></p><p><a href="#">{{user}}</a></p></div>
+		<div id="nav"><a href="#"><p id="current">Home</p></a> <p><a href="#">About</a></p> <p><a href="#">Contact</a></p><p><a href="#">{{current_user.name|escape}}</a></p></div>
 			<div id="logo">Status<strong>Soap</strong></div>
 		</div>
 		
@@ -77,5 +77,23 @@
 		
 	</div>
 	<div id="footer"></div>
+	
+		<script src="http://connect.facebook.net/en_US/all.js"></script>
+		<script>
+			window.fbAsyncInit = function() {
+				FB.init({appId: '{{ facebook_app_id }}', status: true, cookie: true,
+				xfbml: true});
+				FB.Event.subscribe('{% if current_user %}auth.logout{% else %}auth.login{% endif %}', function(response) {
+					{% if current_user %} window.location = "/logout" {% else %} window.location.reload(); {% endif %}
+				});
+			};
+			(function() {
+				var e = document.createElement('script');
+				e.type = 'text/javascript';
+				e.src = document.location.protocol + '//connect.facebook.net/en_US/all.js';
+				e.async = true;
+				document.getElementById('fb-root').appendChild(e);
+			}());
+		</script>
 </body>
 </html>

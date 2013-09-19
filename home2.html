@@ -5,7 +5,6 @@
 </head>
 <body>
 
-
 	<div id="page">
 	<div id="content">
 		<div id="header">
@@ -29,15 +28,21 @@
 				<div id="fb-root"></div></div>
 				<script src="http://connect.facebook.net/en_US/all.js"></script>
 				<script>
-  					FB.init({appId: '629500937079404', status: true, cookie: true, xfbml: true});
-  					FB.Event.subscribe('auth.sessionChange', function(response) {
-   					if (response.session) {
-      				// A user has logged in, and a new cookie has been saved
-   					 } else {
-     				// The user has logged out, and the cookie has been cleared
-    				}	
-  					});
-				</script>
+      				window.fbAsyncInit = function() {
+       					FB.init({appId: '{{ facebook_app_id }}', status: true, cookie: true,
+                	 	xfbml: true});
+        				FB.Event.subscribe('{% if current_user %}auth.logout{% else %}auth.login{% endif %}', function(response) {
+          					{% if current_user %} window.location = "/logout" {% else %} window.location.reload(); {% endif %}
+        				});
+      				};
+      				(function() {
+        				var e = document.createElement('script');
+        				e.type = 'text/javascript';
+        				e.src = document.location.protocol + '//connect.facebook.net/en_US/all.js';
+        				e.async = true;
+       					document.getElementById('fb-root').appendChild(e);
+      				}());
+    			</script>
             </div>
         </div>
 		
