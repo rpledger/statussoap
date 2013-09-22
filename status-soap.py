@@ -119,7 +119,7 @@ class HomeLoggedIn(BaseHandler):
 	def get(self):
 		template = JINJA_ENVIRONMENT.get_template('home.html')
 		graph = facebook.GraphAPI(self.current_user["access_token"])
-		status=graph.fql('SELECT message,time From status WHERE uid=me() ');
+		status=graph.fql('SELECT message,time,status_id From status WHERE uid=me() ');
 		mlist=status['data']
 
 		for m in mlist:
@@ -129,6 +129,24 @@ class HomeLoggedIn(BaseHandler):
 				current_user=self.current_user,
 				messages=mlist
 			)))
+	def post(self):
+		template = JINJA_ENVIRONMENT.get_template('home.html')
+		keyword= self.request.get("keyword")
+		graph = facebook.GraphAPI(self.current_user["access_token"])
+		status=graph.fql('SELECT message,time,status_id From status WHERE uid=me() ');
+		mlist=status['data']
+		if keyword:
+			keywordList=mlist
+			for m in keywordList:
+				m['time']=dt(m['time'])
+				if keywordSearch(m['message'], keyword) is None:
+					del m['message']
+			self.response.write(template.render(dict(
+				facebook_app_id=FACEBOOK_APP_ID,
+				current_user=self.current_user,
+				messages=keywordList
+			)))	
+			
 
 	
 class User(db.Model):
@@ -139,7 +157,9 @@ class User(db.Model):
     profile_url = db.StringProperty(required=True)
     access_token = db.StringProperty(required=True)
     
-    
+def keywordSearch(message, keyword):
+	search=re.compile("%s" % keyword);
+	return search.search(message)
 
     
 application = webapp2.WSGIApplication([

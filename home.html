@@ -16,13 +16,15 @@
 		<div class="scrollbar" id="style-1">
      		<div class="force-overflow">
      		{% for m in messages%}
+     		{% if m['message'] %}
 			<div class="post">
-				<a href="#" class="button">Edit Status</a>
+				<a href="http://www.facebook.com/{{current_user.id}}/posts/{{m['status_id']}}" target="_blank" class="button">Edit Status</a>
 				<p><strong>{{m['message']}}</strong></p>
 				<p>Posted on: {{m['time']}}</br>
 				Flagged for: Inappropriate Content</p>
 			</div>
 			<hr>
+			{% endif %}
 			{% endfor %}
 			
 			</div>
@@ -32,16 +34,18 @@
 		<div id="search-bar">
 			<p><h2>Search Your Statuses for:</h2></p>
 			<div class="checkbox">  
+			<form method="post">
     			<input id="checkWords" type="checkbox" name="check" value="check1">  
    				<label for="checkWords">Inappropriate Language</label>  
     			<br>  
     			<input id="checkContent" type="checkbox" name="check" value="check2">  
    				 <label for="checkContent">Inappropriate Content</label>  
    				 </br></br>
-   				 <input class="search" type="search" placeholder="Keywords">
+   				 <input name="keyword" class="search" type="search" placeholder="Keywords">
    				 </br></br>
    				<input class="button" id="submitSearch" type="submit" value="Search">
 				
+				</form>
 			</div>  
 		</div>
 			
