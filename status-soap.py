@@ -132,22 +132,32 @@ class HomeLoggedIn(BaseHandler):
 	def post(self):
 		template = JINJA_ENVIRONMENT.get_template('home.html')
 		keyword= self.request.get("keyword")
+		badwords= self.request.get("badwords");
+		badcontent=self.request.get("badcontent");
 		graph = facebook.GraphAPI(self.current_user["access_token"])
 		status=graph.fql('SELECT message,time,status_id From status WHERE uid=me() ');
 		mlist=status['data']
 		if keyword:
-			keywordList=mlist
-			for m in keywordList:
+			for m in mlist:
 				m['time']=dt(m['time'])
 				if keywordSearch(m['message'], keyword) is None:
 					del m['message']
-			self.response.write(template.render(dict(
-				facebook_app_id=FACEBOOK_APP_ID,
-				current_user=self.current_user,
-				messages=keywordList
-			)))	
-			
 
+		if badwords:
+			for m in mlist:
+				if badWordSearch(m['message']) is not None:
+					del m['message']
+		
+		if badcontent:
+			for m in mlist:
+				if badContentSearch(m['message']) is not None:
+					del m['message']
+
+		self.response.write(template.render(dict(
+			facebook_app_id=FACEBOOK_APP_ID,
+			current_user=self.current_user,
+			messages=mlist
+			)))
 	
 class User(db.Model):
     id = db.StringProperty(required=True)
@@ -161,8 +171,41 @@ def keywordSearch(message, keyword):
 	search=re.compile("%s" % keyword);
 	return search.search(message)
 
+def badWordSearch(message):
+	for w in badWordList:
+		search=re.compile("%s" % w);
+		if search.search(message) is not None:
+			return 1
+	return 0
+	
+def badContentSearch(message):
+	for w in badContentList:
+		search=re.compile("%s" % w);
+		if search.search(message) is not None:
+			return 1
+	return 0
     
 application = webapp2.WSGIApplication([
     ('/', HomeNotLoggedIn),
     ('/home', HomeLoggedIn),
     ], debug=True, config=config)
+    
+badWordList=set(['anus', 'arse', 'ass', 'axwound', 'bampot', 'bastard','bitch',
+'blow job', 'blowjob', 'bollocks', 'bollox', 'boner', 'fuck', 'shit', 'butt', 'camel toe',
+'chesticle','choad', 'chode', 'clit', 'cock', 'cooch', 'cooter', 'cum', 'cunnie', 'cunnilingus', 'cunt',
+'damn', 'dick', 'dildo', 'douche', 'dookie', 'fellatio', 'gooch', 'handjob', 'hand job', 'hard on', 'hell',
+'ho', 'hoe', 'humping', 'jagoff', 'jerk', 'jizz', 'kooch', 'kootch', 'kunt', 'minge', 'muff', 'munging',
+'nut sack', 'nutsack', 'panooch', 'pecker', 'penis', 'piss', 'poon', 'punta', 'pussy', 'pussies',
+'puto', 'queef', 'renob', 'rimjob', 'schlong', 'scrote', 'shiz', 'skank', 'skeet', 'slut', 'smeg',
+'snatch', 'splooge', 'tard', 'testicle', 'tit', 'twat', 'vag', 'vajay', 'va-j-j', 'vjay', 'wank',
+'whore', 'bang']);
+
+badContentList=set(['beaner', 'chinc', 'chink', 'coon', 'cracker', 'dago', 'deggo', 'dike', 'carpetmuncher',
+'dyke', 'fag', 'flamer', 'gay',  'gook', 'gringo', 'guido', 'heeb', 'homo', 'honkey', 'jap', 'jigaboo',
+'junglebunny', 'jungle bunny', 'kike', 'kyke', 'lesbo', 'lezzie', 'mick', 'negro', 'nigaboo', 'nigga',
+'nigger', 'niglet', 'paki', 'polesmoker', 'pollock', 'porchmonkey', 'porch monkey', 'queer', 
+'ruski', 'spic', 'spick', 'spook', 'wetback', 'wop', 'alchohol', 'amfetamine', 'blackout', 'coke', 'crack',
+'ecstasy', 'hallucinogens', 'ice', 'joint', 'marijuana', 'pot', 'mary jane', 'lsd', 'acid', 
+'booze', 'beer', 'wine', 'meth', 'speed', 'crank', 'uppers', 'pcp', 'heroin', 'cocaine', 'mescaline', 
+'drug', 'blow', 'blunt', 'cigarette', 'bong', 'liquor', 'hash', 'reefer', 'weed', 'smoke', 'tobacco']);
+
