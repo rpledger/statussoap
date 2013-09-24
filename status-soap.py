@@ -174,6 +174,13 @@ class HomeLoggedIn(BaseHandler):
 			current_user=self.current_user,
 			messages=mlist
 			)))
+			
+class LogoutHandler(BaseHandler):
+    def get(self):
+        if self.current_user is not None:
+            self.session['user'] = None
+
+        self.redirect('/')
 	
 class User(db.Model):
     id = db.StringProperty(required=True)
