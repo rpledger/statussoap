@@ -142,16 +142,32 @@ class HomeLoggedIn(BaseHandler):
 				m['time']=dt(m['time'])
 				if keywordSearch(m['message'], keyword) is None:
 					del m['message']
+		if badwords and badcontent:
+			for m in mlist:
+				if 'message' in m:
+					if badWordSearch(m['message']) is None:
+						if badContentSearch(m['message']) is None:
+							del m['message']
+						else:
+							m['flag']=2
+					else:
+						m['flag']=1
 
-		if badwords:
+		elif badwords:
 			for m in mlist:
-				if badWordSearch(m['message']) is not None:
-					del m['message']
+				if 'message' in m:
+					if badWordSearch(m['message']) is None:
+						del m['message']
+					else:
+						m['flag']=1
 		
-		if badcontent:
+		elif badcontent:
 			for m in mlist:
-				if badContentSearch(m['message']) is not None:
-					del m['message']
+				if 'message' in m:
+					if badContentSearch(m['message']) is None:
+						del m['message']
+					else:
+						m['flag']=2;
 
 		self.response.write(template.render(dict(
 			facebook_app_id=FACEBOOK_APP_ID,
@@ -176,21 +192,21 @@ def badWordSearch(message):
 		search=re.compile("%s" % w);
 		if search.search(message) is not None:
 			return 1
-	return 0
+	return None
 	
 def badContentSearch(message):
 	for w in badContentList:
 		search=re.compile("%s" % w);
 		if search.search(message) is not None:
 			return 1
-	return 0
+	return None
     
 application = webapp2.WSGIApplication([
     ('/', HomeNotLoggedIn),
     ('/home', HomeLoggedIn),
     ], debug=True, config=config)
     
-badWordList=set(['anus', 'arse', 'ass', 'axwound', 'bampot', 'bastard','bitch',
+badWordList=set(['SXSW', 'time', 'my', 'anus', 'arse', 'ass', 'axwound', 'bampot', 'bastard','bitch',
 'blow job', 'blowjob', 'bollocks', 'bollox', 'boner', 'fuck', 'shit', 'butt', 'camel toe',
 'chesticle','choad', 'chode', 'clit', 'cock', 'cooch', 'cooter', 'cum', 'cunnie', 'cunnilingus', 'cunt',
 'damn', 'dick', 'dildo', 'douche', 'dookie', 'fellatio', 'gooch', 'handjob', 'hand job', 'hard on', 'hell',
