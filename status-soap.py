@@ -6,6 +6,18 @@ import facebook
 import urllib2
 import re
 import datetime
+import urllib
+import cgi
+import base64
+import Cookie
+import email.utils
+import hashlib
+import hmac
+import logging
+import os.path
+import time
+import urllib
+import wsgiref.handlers
 
 # Find a JSON parser
 try:
@@ -42,67 +54,46 @@ class BaseHandler(webapp2.RequestHandler):
     """
     @property
     def current_user(self):
-        if self.session.get("user"):
-            # User is logged in
-            return self.session.get("user")
-        else:
-            # Either used just logged in or just saw the first page
-            # We'll see here
-            cookie = facebook.get_user_from_cookie(self.request.cookies,
-                                                   FACEBOOK_APP_ID,
-                                                   FACEBOOK_APP_SECRET)
-            if cookie:
-                # Okay so user logged in.
-                # Now, check to see if existing user
-                user = User.get_by_key_name(cookie["uid"])
-                if not user:
-                    # Not an existing user so get user info
-                    graph = facebook.GraphAPI(cookie["access_token"])
-                    profile = graph.get_object("me")
-                    user = User(
-                        key_name=str(profile["id"]),
-                        id=str(profile["id"]),
-                        name=profile["name"],
-                        profile_url=profile["link"],
-                        access_token=cookie["access_token"]
-                    )
-                    user.put()
-                elif user.access_token != cookie["access_token"]:
-                    user.access_token = cookie["access_token"]
-                    user.put()
-                # User is now logged in
-                self.session["user"] = dict(
-                    name=user.name,
-                    profile_url=user.profile_url,
-                    id=user.id,
-                    access_token=user.access_token
-                )
-                return self.session.get("user")
-        return None
+    	if not hasattr(self, "_current_user"):
+    		self._current_user = None
+    		user_id = parse_cookie(self.request.cookies.get("fb_user"))
+    		if user_id:
+    			self._current_user = User.get_by_key_name(user_id)
+    	return self._current_user
 
-    def dispatch(self):
-        """
-        This snippet of code is taken from the webapp2 framework documentation.
-        See more at
-        http://webapp-improved.appspot.com/api/webapp2_extras/sessions.html
 
-        """
-        self.session_store = sessions.get_store(request=self.request)
-        try:
-            webapp2.RequestHandler.dispatch(self)
-        finally:
-            self.session_store.save_sessions(self.response)
+class LoginHandler(BaseHandler):
+	def get(self):
+		verification_code = self.request.get("code")
+		args = dict(client_id=FACEBOOK_APP_ID,
+							redirect_uri=self.request.path_url,
+							scope="user_status"
+							)
+		if self.request.get("code"):
+			args["client_secret"] = FACEBOOK_APP_SECRET
+			args["code"] = self.request.get("code")
+			args["scope"]="user_status"
+			response = cgi.parse_qs(urllib.urlopen(
+				"https://graph.facebook.com/oauth/access_token?" +
+				urllib.urlencode(args)).read())
+			access_token = response["access_token"][-1]
+			#Download the user profile and cache a local instance of the
+			#basic profile info
+			profile = json.load(urllib.urlopen(
+				"https://graph.facebook.com/me?" +\
+				urllib.urlencode(dict(access_token=access_token))))
+			user = User(key_name=str(profile["id"]), id=str(profile["id"]),
+						name=profile["name"], access_token=access_token,
+						profile_url=profile["link"])
+			user.put()
+			set_cookie(self.response, "fb_user", str(profile["id"]),
+					expires=time.time() + 30 * 86400)
+			self.redirect("/")
+		else:
+			self.redirect(
+				"https://graph.facebook.com/oauth/authorize?" +
+				urllib.urlencode(args))
 
-    @webapp2.cached_property
-    def session(self):
-        """
-        This snippet of code is taken from the webapp2 framework documentation.
-        See more at
-        http://webapp-improved.appspot.com/api/webapp2_extras/sessions.html
-
-        """
-        return self.session_store.get_session()    		
-    
     
 class HomeNotLoggedIn(BaseHandler):
 		
@@ -114,11 +105,12 @@ class HomeNotLoggedIn(BaseHandler):
 			self.redirect('/home')
 		
 
+
 class HomeLoggedIn(BaseHandler):
 		
 	def get(self):
 		template = JINJA_ENVIRONMENT.get_template('home.html')
-		graph = facebook.GraphAPI(self.current_user["access_token"])
+		graph = facebook.GraphAPI(self.current_user.access_token)
 		status=graph.fql('SELECT message,time,status_id From status WHERE uid=me() ');
 		mlist=status['data']
 
@@ -174,13 +166,10 @@ class HomeLoggedIn(BaseHandler):
 			current_user=self.current_user,
 			messages=mlist
 			)))
-			
 class LogoutHandler(BaseHandler):
-    def get(self):
-        if self.current_user is not None:
-            self.session['user'] = None
-
-        self.redirect('/')
+	def get(self):
+		set_cookie(self.response, "fb_user", "", expires=time.time() - 86400)
+		self.redirect("/")
 	
 class User(db.Model):
     id = db.StringProperty(required=True)
@@ -208,12 +197,59 @@ def badContentSearch(message):
 			return 1
 	return None
     
+def set_cookie(response, name, value, domain=None, path="/", expires=None):
+	"""Generates and signs a cookie for the give name/value"""
+	timestamp = str(int(time.time()))
+	value = base64.b64encode(value)
+	signature = cookie_signature(value, timestamp)
+	cookie = Cookie.BaseCookie()
+	cookie[name] = "|".join([value, timestamp, signature])
+	cookie[name]["path"] = path
+	if domain:
+		cookie[name]["domain"] = domain
+	if expires:
+		cookie[name]["expires"] = email.utils.formatdate(
+			expires, localtime=False, usegmt=True)
+	response.headers.add_header("Set-Cookie", cookie.output()[12:])
+	
+def parse_cookie(value):
+	"""Parses and verifies a cookie value from set_cookie"""
+	if not value:
+		return None
+	parts = value.split("|")
+	if len(parts) != 3:
+		return None
+	if cookie_signature(parts[0], parts[1]) != parts[2]:
+		logging.warning("Invalid cookie signature %r", value)
+		return None
+	timestamp = int(parts[1])
+	if timestamp < time.time() - 30 * 86400:
+		logging.warning("Expired cookie %r", value)
+		return None
+	try:
+		return base64.b64decode(parts[0]).strip()
+	except:
+		return None
+		
+def cookie_signature(*parts):
+	"""Generates a cookie signature.
+	
+	We use the Facebook app secret since it is different for every app (so
+	people using this example don't accidentally all use the same secret).
+	"""
+	hash = hmac.new(FACEBOOK_APP_SECRET, digestmod=hashlib.sha1)
+	for part in parts:
+		hash.update(part)
+	return hash.hexdigest()
+    
 application = webapp2.WSGIApplication([
-    ('/', HomeNotLoggedIn),
-    ('/home', HomeLoggedIn),
+	('/', HomeNotLoggedIn),
+	('/home', HomeLoggedIn),
+    ('/login', LoginHandler),
+    ('/logout', LogoutHandler)
     ], debug=True, config=config)
     
-badWordList=set(['SXSW', 'time', 'my', 'anus', 'arse', 'ass', 'axwound', 'bampot', 'bastard','bitch',
+badWordList=set(['anus', 'arse', 'ass', 'axwound', 'bampot', 'bastard','bitch',
 'blow job', 'blowjob', 'bollocks', 'bollox', 'boner', 'fuck', 'shit', 'butt', 'camel toe',
 'chesticle','choad', 'chode', 'clit', 'cock', 'cooch', 'cooter', 'cum', 'cunnie', 'cunnilingus', 'cunt',
 'damn', 'dick', 'dildo', 'douche', 'dookie', 'fellatio', 'gooch', 'handjob', 'hand job', 'hard on', 'hell',
