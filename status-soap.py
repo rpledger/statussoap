@@ -32,6 +32,7 @@ _parse_json = json.dumps
 from time import sleep
 from google.appengine.ext import db
 from webapp2_extras import sessions
+from google.appengine.api import mail
 def dt(u): return datetime.datetime.fromtimestamp(u)
 
 FACEBOOK_APP_ID = "629500937079404"
@@ -67,12 +68,12 @@ class LoginHandler(BaseHandler):
 		verification_code = self.request.get("code")
 		args = dict(client_id=FACEBOOK_APP_ID,
 							redirect_uri=self.request.path_url,
-							scope="user_status"
+							scope="user_status,email"
 							)
 		if self.request.get("code"):
 			args["client_secret"] = FACEBOOK_APP_SECRET
 			args["code"] = self.request.get("code")
-			args["scope"]="user_status"
+			args["scope"]="user_status,email"
 			response = cgi.parse_qs(urllib.urlopen(
 				"https://graph.facebook.com/oauth/access_token?" +
 				urllib.urlencode(args)).read())
@@ -84,7 +85,7 @@ class LoginHandler(BaseHandler):
 				urllib.urlencode(dict(access_token=access_token))))
 			user = User(key_name=str(profile["id"]), id=str(profile["id"]),
 						name=profile["name"], access_token=access_token,
-						profile_url=profile["link"])
+						profile_url=profile["link"], email=profile["email"])
 			user.put()
 			set_cookie(self.response, "fb_user", str(profile["id"]),
 					expires=time.time() + 30 * 86400)
@@ -95,38 +96,37 @@ class LoginHandler(BaseHandler):
 				urllib.urlencode(args))
 
     
-class HomeNotLoggedIn(BaseHandler):
+class Contact(BaseHandler):
 		
 	def get(self):
-		template = JINJA_ENVIRONMENT.get_template('home2.html')
-		if self.current_user is None:
+		template = JINJA_ENVIRONMENT.get_template('contact.html')
+		
+
+class Home(BaseHandler):
+		
+	def get(self):
+		if parse_cookie(self.request.cookies.get("fb_user")) is None:
+			template = JINJA_ENVIRONMENT.get_template('home2.html')
 			self.response.write(template.render(dict(facebook_app_id=FACEBOOK_APP_ID,current_user=self.current_user)))
-		elif self.current_user is not None:
-			self.redirect('/home')
-		
-
-
-class HomeLoggedIn(BaseHandler):
-		
-	def get(self):
-		template = JINJA_ENVIRONMENT.get_template('home.html')
-		graph = facebook.GraphAPI(self.current_user.access_token)
-		status=graph.fql('SELECT message,time,status_id From status WHERE uid=me() ');
-		mlist=status['data']
-
-		for m in mlist:
-			m['time']=dt(m['time'])
-		self.response.write(template.render(dict(
-				facebook_app_id=FACEBOOK_APP_ID,
-				current_user=self.current_user,
-				messages=mlist
-			)))
+		else:
+			template = JINJA_ENVIRONMENT.get_template('home.html')
+			graph = facebook.GraphAPI(self.current_user.access_token)
+			status=graph.fql('SELECT message,time,status_id From status WHERE uid=me() ');
+			mlist=status['data']
+	
+			for m in mlist:
+				m['time']=dt(m['time'])
+			self.response.write(template.render(dict(
+					facebook_app_id=FACEBOOK_APP_ID,
+					current_user=self.current_user,
+					messages=mlist
+				)))
 	def post(self):
 		template = JINJA_ENVIRONMENT.get_template('home.html')
 		keyword= self.request.get("keyword")
 		badwords= self.request.get("badwords");
 		badcontent=self.request.get("badcontent");
-		graph = facebook.GraphAPI(self.current_user["access_token"])
+		graph = facebook.GraphAPI(self.current_user.access_token)
 		status=graph.fql('SELECT message,time,status_id From status WHERE uid=me() ');
 		mlist=status['data']
 		if keyword:
@@ -177,23 +177,32 @@ class User(db.Model):
     updated = db.DateTimeProperty(auto_now=True)
     name = db.StringProperty(required=True)
     profile_url = db.StringProperty(required=True)
+    email = db.StringProperty()
     access_token = db.StringProperty(required=True)
     
 def keywordSearch(message, keyword):
-	search=re.compile("%s" % keyword);
+	search=re.compile("%s" % keyword, re.I);
 	return search.search(message)
 
 def badWordSearch(message):
 	for w in badWordList:
-		search=re.compile("%s" % w);
-		if search.search(message) is not None:
+		search=re.compile("%s" % w, re.I);
+		if (search.search(message) is not None):
+			return 1
+	for w in badWordListAlone:
+		search= re.compile("(^|\s)%s[\s|\b]", re.I);
+		if (search.search(message) is not None):
 			return 1
 	return None
 	
 def badContentSearch(message):
 	for w in badContentList:
-		search=re.compile("%s" % w);
+		search=re.compile("%s" % w, re.I);
 		if search.search(message) is not None:
+			return 1
+	for w in badContentListAlone:
+		search= re.compile("(^|\s)%s[\s|\b]", re.I);
+		if (search.search(message) is not None):
 			return 1
 	return None
     
@@ -243,28 +252,34 @@ def cookie_signature(*parts):
 	return hash.hexdigest()
     
 application = webapp2.WSGIApplication([
-	('/', HomeNotLoggedIn),
-	('/home', HomeLoggedIn),
+	('/', Home),
+	('/contact', Contact),
     ('/login', LoginHandler),
     ('/logout', LogoutHandler)
     ], debug=True, config=config)
     
-badWordList=set(['anus', 'arse', 'ass', 'axwound', 'bampot', 'bastard','bitch',
+badWordList=set(['ass', 'axwound', 'bampot', 'bastard','bitch',
 'blow job', 'blowjob', 'bollocks', 'bollox', 'boner', 'fuck', 'shit', 'butt', 'camel toe',
-'chesticle','choad', 'chode', 'clit', 'cock', 'cooch', 'cooter', 'cum', 'cunnie', 'cunnilingus', 'cunt',
+'chesticle','choad', 'chode', 'clit', 'cock', 'cooch', 'cooter', 'cunnie', 'cunnilingus', 
 'damn', 'dick', 'dildo', 'douche', 'dookie', 'fellatio', 'gooch', 'handjob', 'hand job', 'hard on', 'hell',
-'ho', 'hoe', 'humping', 'jagoff', 'jerk', 'jizz', 'kooch', 'kootch', 'kunt', 'minge', 'muff', 'munging',
-'nut sack', 'nutsack', 'panooch', 'pecker', 'penis', 'piss', 'poon', 'punta', 'pussy', 'pussies',
-'puto', 'queef', 'renob', 'rimjob', 'schlong', 'scrote', 'shiz', 'skank', 'skeet', 'slut', 'smeg',
-'snatch', 'splooge', 'tard', 'testicle', 'tit', 'twat', 'vag', 'vajay', 'va-j-j', 'vjay', 'wank',
+ 'hoe', 'humping', 'jagoff', 'jerk off', 'jizz', 'kooch', 'kootch',  'minge', 'munging',
+'nut sack', 'nutsack', 'panooch', 'pecker', 'penis', 'pussy', 'pussies',
+ 'queef',  'rimjob', 'schlong', 'scrote', 'shiz', 'skank', 'skeet', 'slut', 
+'snatch', 'splooge', 'tard', 'testicle', 'vajay', 'va-j-j', 'vjay', 'wank',
 'whore', 'bang']);
 
-badContentList=set(['beaner', 'chinc', 'chink', 'coon', 'cracker', 'dago', 'deggo', 'dike', 'carpetmuncher',
-'dyke', 'fag', 'flamer', 'gay',  'gook', 'gringo', 'guido', 'heeb', 'homo', 'honkey', 'jap', 'jigaboo',
-'junglebunny', 'jungle bunny', 'kike', 'kyke', 'lesbo', 'lezzie', 'mick', 'negro', 'nigaboo', 'nigga',
-'nigger', 'niglet', 'paki', 'polesmoker', 'pollock', 'porchmonkey', 'porch monkey', 'queer', 
-'ruski', 'spic', 'spick', 'spook', 'wetback', 'wop', 'alchohol', 'amfetamine', 'blackout', 'coke', 'crack',
-'ecstasy', 'hallucinogens', 'ice', 'joint', 'marijuana', 'pot', 'mary jane', 'lsd', 'acid', 
-'booze', 'beer', 'wine', 'meth', 'speed', 'crank', 'uppers', 'pcp', 'heroin', 'cocaine', 'mescaline', 
-'drug', 'blow', 'blunt', 'cigarette', 'bong', 'liquor', 'hash', 'reefer', 'weed', 'smoke', 'tobacco']);
+badWordListAlone=set(['anus', 'arse', 'cum' , 'cunt', 'gooch', 'ho', 'muff', 'poon', 'punta', 'kunt', 'piss', 'puto',
+'renob', 'smeg', 'tit', 'twat', 'vag', ]);
 
+badContentList=set(['beaner', 'chinc', 'chink',  'cracker',  'deggo',  'carpetmuncher',
+'dyke', 'fag', 'flamer', 'gay',  'gook', 'gringo', 'guido', 'heeb', 'homo', 'honkey',  'jigaboo',
+'junglebunny', 'jungle bunny',  'kyke', 'lesbo', 'lezzie',  'negro', 'nigaboo', 'nigga',
+'nigger', 'niglet',  'polesmoker', 'pollock', 'porchmonkey', 'porch monkey', 'queer', 
+'ruski',  'wetback','alchohol', 'amfetamine', 'blackout', 'coke', 'crack',
+'ecstasy', 'hallucinogens', 'joint', 'marijuana',  'mary jane', 'lsd', 'dos equis', 'bud lite', 
+'Natty Lite', "Natural Lite", "natty", "coors", 'whiskey', 'vodka', 'shiner', 'keystone', 'miller lite'
+'booze', 'beer', 'wine', 'meth', 'speed', 'crank', 'uppers', 'pcp', 'heroin', 'cocaine', 'mescaline', 
+'drug', 'blow', 'blunt', 'cigarette',  'liquor',  'reefer', 'weed', 'smoke', 'tobacco']);
+
+badContentListAlone=set(['coon', 'dago', 'dike', 'jap', 'kike', 'mick', 'paki', 'spic', "spick"
+'wop', 'keg', 'pot', 'acid', 'bong', 'hash', 'rum', 'gin']);
