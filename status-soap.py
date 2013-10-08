@@ -100,7 +100,12 @@ class Contact(BaseHandler):
 		
 	def get(self):
 		template = JINJA_ENVIRONMENT.get_template('contact.html')
+		self.response.write(template.render());
 		
+class About(BaseHandler):
+	def get(self):
+		template = JINJA_ENVIRONMENT.get_template('about.html')
+		self.response.write(template.render());
 
 class Home(BaseHandler):
 		
@@ -254,6 +259,7 @@ def cookie_signature(*parts):
 application = webapp2.WSGIApplication([
 	('/', Home),
 	('/contact', Contact),
+	('/about', About),
     ('/login', LoginHandler),
     ('/logout', LogoutHandler)
     ], debug=True, config=config)
