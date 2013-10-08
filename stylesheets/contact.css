@@ -50,6 +50,14 @@ font-size: 18px;
 display: block;
 
 }
+#content h1{
+	text-align: center;
+	margin-top: -20px;
+}
+iframe{
+	margin-left: 150px;
+	margin-top: -20px;
+}
 #nav a{
 text-decoration: none;
 color: black;
